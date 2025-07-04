@@ -1,6 +1,7 @@
 const { verifyToken } = require('../utils/jwt');
+const prisma = require('../prisma/client');
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -11,9 +12,14 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
-    req.user = decoded; // Attach user info to request
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    req.user = user;
     next();
   } catch (err) {
+    console.log(err);
     return res.status(401).json({ message: 'Token verification failed' });
   }
 };

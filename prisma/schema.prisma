@@ -18,19 +18,77 @@ datasource db {
 model User {
   id             Int       @id @default(autoincrement())
   email          String    @unique
-  password       String
+  password       String?
   name           String?
-  role           Role      @default(USER)
+  role           Role      @default(WORKER)
   isEmailVerified Boolean   @default(false)
   profileImage   String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  resetOtp       String?
+  onboardingCompleted Boolean @default(false)
+  resetOtpExpiresAt DateTime?
+  googleId         String?
+  gigs Gig[]
+  requestedGigs GigRequest[]
+}
 
-  // Example of a relation (optional)
-  // posts          Post[]    // If you have a Post model
+
+model Gig {
+  id Int @id @default(autoincrement())
+  title String
+  description String
+  price Int
+  category Category
+  images String[] @default([])
+  currency String @default("EGP")
+  deliveryTime Int
+  isActive Boolean @default(true)
+  isDeleted Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId Int  
+  user User @relation(fields: [userId], references: [id])
+  userGig GigRequest[]
+}
+
+model GigRequest  {
+  id Int @id @default(autoincrement())
+  gigId Int
+  gig Gig @relation(fields: [gigId], references: [id])
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+  @@unique([userId, gigId]) // Prevent duplicate requests for the same gig
+  status RequestStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Role {
-  USER
+  WORKER
+  CLIENT
   ADMIN
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum Category {
+  GRAPHIC_DESIGN
+  WEB_DESIGN
+  WEB_DEVELOPMENT
+  APP_DEVELOPMENT
+  SEO
+  CONTENT_WRITING
+  COPYWRITING
+  TRANSLATION
+  VIDEO_PRODUCTION
+  VIDEO_EDITING
+  AUDIO_EDITING
+  WRITING
+  MARKETING
+  SOCIAL_MEDIA
 }
