@@ -14,13 +14,17 @@ exports.register = async ({ email, password }) => {
   return { user };
 };
 
+exports.getUser = async ({ email }) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  return { user };
+}
+
 exports.login = async ({ email, password }) => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error('Invalid credentials');
   if(!user.password) throw new Error('Invalid credentials');
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) throw new Error('Invalid credentials');
-
   const token = jwt.signToken({ userId: user.id });
   return { token };
 };
@@ -91,5 +95,5 @@ exports.upsertUser = async (user) => {
       googleId: user.id,
     },
   })
-  return { message: 'User upserted successfully', user };
+  return { message: 'User upserted successfully', user: res };
 }

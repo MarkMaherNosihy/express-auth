@@ -16,6 +16,12 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try{
     const result = await authService.login(req.body);
+    // Set the token as a cookie
+    res.cookie('token', result.token, { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production', 
+      maxAge: 24 * 60 * 60 * 1000 
+    });
     res.status(200).json(result);
   }catch(error){
     if(error.message === 'Invalid credentials'){
@@ -53,6 +59,26 @@ exports.verifyResetPassword = async (req, res) => {
   }
 }
 
+
+exports.getUser = async (req, res) => {
+  const user = req.user;
+  res.status(200).json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    profileImage: user.profileImage,
+    isEmailVerified: user.isEmailVerified,
+    onboardingCompleted: user.onboardingCompleted,
+    googleId: user.googleId
+  });
+}
+
+exports.logout = async (req, res) => {
+  res.clearCookie('token');
+  res.status(200).json({ message: 'Logged out successfully' });
+}
+
 exports.resetPassword = async (req, res) => {
   try{
     const result = await authService.resetpassword(req.body);
@@ -74,6 +100,11 @@ exports.googleAuthCallback = async (req, res) => {
   //upsert user
   const {user} = await authService.upsertUser(result);
   //generate token
+  console.log("User is", user);
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
-  res.status(200).json({ token });
+  res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 });
+  console.log(process.env.FRONTEND_URL);
+  console.log("Cookie is set");
+  res.redirect(`${process.env.FRONTEND_URL}`);
+  console.log("Redirecting to frontend");
 }
